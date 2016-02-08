@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<title>Hangman</title>
+
+	<style type="text/css">
+		body {
+			margin: 16px auto;
+			font-family: sans-serif;
+			text-align: center;
+		}
+		#blanks {
+			font-size: 48px;
+			margin: 24px;
+		}
+	</style>
+
+</head>
+<body>
+
+	<h1>Hangman</h1>
+
+	<form id='hangman-controls'>
+		<div><span id='chances'></span> chances</div>
+		<div id='blanks'></div>
+		<input id='guess' type='text' size='1' placeholder=''>
+		<input id='submit-guess' type='button' disabled='true' value='submit'>
+	</form>
+
+	<script>
+		function byId(id) {
+			return document.getElementById(id);
+		}
+
+		var HangmanGame = function() {};
+		HangmanGame.prototype.setup = function() {
+			this.chances = 6;
+			this.word = '';
+			this.guesses = [];
+
+			// validation wasn't in the spec, but we kind of need it...
+			// - limit guess entry to one letter
+			// - only alpha-num characters
+			// - not already guessed
+			// - enable submit only when we have a letter
+			var that = this;
+			byId('guess').addEventListener('keydown', function(e) {
+				e.preventDefault();
+
+				var guess = String.fromCharCode(e.keyCode) || '';
+				guess = guess.replace(/\W/,'');
+				if (!guess) return;
+				if (that.guesses.indexOf(guess) >= 0) {
+					alert("You already guessed " + guess);
+					byId('guess').value = '';
+					return;
+				}
+				byId('guess').value = guess;
+
+				if (byId('guess').value) {
+					byId('submit-guess').disabled = false;
+				} else {
+					byId('submit-guess').disabled = true;
+				}
+			});
+
+			// handle guess events
+			byId('submit-guess').addEventListener('click', function(e) {
+				that.nextTurn(e);
+			});
+			byId('hangman-controls').addEventListener('submit', function(e) {
+				that.nextTurn(e);
+			});
+
+			// get word for guessing
+			this.word = prompt("Enter a word to begin the game:").toUpperCase();
+			if (!this.word || !this.word.replace(/\W/g,'')) {
+				this.setup();
+				return;
+			}
+
+			this.nextTurn();
+		}
+
+		HangmanGame.prototype.nextTurn = function(e) {
+			var guess = byId('guess').value;
+			if (guess) {
+				this.guesses.push(guess)
+			}
+
+			if (guess && this.word.indexOf(guess) === -1) {
+				// missed guess
+				this.chances--;
+			} else {
+				// correct guess & redraw blanks
+				var blanks = '';
+				var that = this;
+				this.word.split('').map(function(character) {
+					if (that.guesses.indexOf(character.toUpperCase()) >= 0 ) {
+						blanks += character + '&nbsp;';
+					} else {
+						blanks += '_&nbsp;';
+					}
+				});
+				byId('blanks').innerHTML = blanks;
+			}
+
+			byId('chances').innerHTML = this.chances;
+
+			// game over?
+			if (blanks && blanks.indexOf('_') === -1) {
+				alert('you win!');
+				this.setup();
+			} else if (this.chances === 0) {
+				alert('you loose');
+				this.setup();
+			} else {
+				// next turn
+				byId('guess').value = '';		
+				byId('guess').focus();
+			}
+		}
+
+		window.addEventListener('load', function(e) {
+			var hangman = new HangmanGame()
+			hangman.setup();
+		});
+	</script>
+	
+</body>
+</html>
